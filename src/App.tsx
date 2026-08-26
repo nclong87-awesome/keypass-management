@@ -537,7 +537,7 @@ export default function App() {
               </span>
               <span className="flex items-center gap-1 text-[11px] text-slate-500">
                 <Info className="w-3.5 h-3.5 text-slate-400" />
-                Passwords masked as •••••••••••• by default
+                Passwords masked revealing last 4 characters by default
               </span>
             </div>
 

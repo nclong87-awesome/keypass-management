@@ -71,6 +71,12 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
     }
   };
 
+  const getMaskedPassword = (password: string): string => {
+    if (!password || password === '[unavailable]') return '—';
+    if (password.length <= 4) return `...${password}`;
+    return `...${password.slice(-4)}`;
+  };
+
   const formatDate = (dateString: string | null) => {
     if (!dateString) return '—';
     try {
@@ -147,11 +153,15 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                       <div className="flex items-center gap-1.5">
                         <div className="relative flex-1 min-w-0">
                           <input
-                            type={isRevealed ? 'text' : 'password'}
-                            value={isRevealed ? item.password : '••••••••••••'}
+                            type="text"
+                            value={isRevealed ? item.password : getMaskedPassword(item.password)}
                             readOnly
                             tabIndex={-1}
-                            className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-xs font-mono text-slate-800 select-all focus:outline-none truncate"
+                            className={`w-full border rounded px-2 py-1 text-xs font-mono select-all focus:outline-none truncate ${
+                              isRevealed
+                                ? 'bg-indigo-50/60 border-indigo-200 text-indigo-900 font-semibold'
+                                : 'bg-slate-50 border-slate-200 text-indigo-600 font-medium'
+                            }`}
                             aria-label={`Password field for ${item.title}`}
                           />
                         </div>
@@ -391,11 +401,15 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                 ) : (
                   <div className="flex items-center gap-2">
                     <input
-                      type={isRevealed ? 'text' : 'password'}
-                      value={isRevealed ? item.password : '••••••••••••'}
+                      type="text"
+                      value={isRevealed ? item.password : getMaskedPassword(item.password)}
                       readOnly
                       tabIndex={-1}
-                      className="flex-1 bg-white border border-slate-200 rounded px-3 py-1.5 text-xs font-mono text-slate-900 select-all min-w-0"
+                      className={`flex-1 border rounded px-3 py-1.5 text-xs font-mono select-all min-w-0 ${
+                        isRevealed
+                          ? 'bg-indigo-50/60 border-indigo-200 text-indigo-900 font-semibold'
+                          : 'bg-slate-50 border-slate-200 text-indigo-600 font-medium'
+                      }`}
                     />
                     <button
                       type="button"
