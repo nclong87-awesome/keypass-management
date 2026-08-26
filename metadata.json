@@ -1,0 +1,6 @@
+{
+  "name": "KeyPass Manager",
+  "description": "A clean, polished, and secure password management web app for KeyPass entries.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
