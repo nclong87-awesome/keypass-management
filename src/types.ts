@@ -1,6 +1,6 @@
 export interface KeyPass {
   id: string;
-  group: string;
+  group?: string;
   title: string;
   username: string;
   password: string;

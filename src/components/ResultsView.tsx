@@ -10,7 +10,6 @@ import {
   ExternalLink,
   ShieldAlert,
   Calendar,
-  Folder,
   User,
   Hash,
   FileText,
@@ -84,7 +83,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
         <table className="w-full text-left border-collapse" id="results-desktop-table">
           <thead>
             <tr className="border-b border-slate-200 bg-slate-50/80 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              <th className="py-3.5 px-4">Title & Group</th>
+              <th className="py-3.5 px-4">Title</th>
               <th className="py-3.5 px-4">Username</th>
               <th className="py-3.5 px-4">Password</th>
               <th className="py-3.5 px-4">URL</th>
@@ -104,17 +103,11 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                   id={`keypass-row-${item.id}`}
                   className="hover:bg-slate-50/80 transition-colors group"
                 >
-                  {/* Title & Group & ID */}
+                  {/* Title & ID */}
                   <td className="py-3.5 px-4 align-top">
                     <div className="font-semibold text-slate-900 flex items-center gap-1.5">
                       <span>{item.title}</span>
                     </div>
-                    {item.group && (
-                      <div className="text-xs text-indigo-600 mt-0.5 flex items-center gap-1 font-mono font-medium">
-                        <Folder className="w-3 h-3 shrink-0" />
-                        <span>{item.group}</span>
-                      </div>
-                    )}
                     <div className="text-[11px] text-slate-400 font-mono mt-1 flex items-center gap-1" title={`ID: ${item.id}`}>
                       <Hash className="w-2.5 h-2.5 shrink-0" />
                       <span className="truncate max-w-[120px]">{item.id}</span>
@@ -287,18 +280,12 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
               id={`keypass-card-${item.id}`}
               className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs space-y-3"
             >
-              {/* Header: Title, Group & Actions */}
+              {/* Header: Title & Actions */}
               <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-3">
                 <div>
                   <h3 className="font-bold text-slate-900 text-base">
                     {item.title}
                   </h3>
-                  {item.group && (
-                    <div className="text-xs text-indigo-600 flex items-center gap-1 font-mono font-medium mt-0.5">
-                      <Folder className="w-3 h-3" />
-                      <span>{item.group}</span>
-                    </div>
-                  )}
                 </div>
                 <div className="flex items-center gap-1.5">
                   <button

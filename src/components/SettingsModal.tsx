@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { fetchOAuthToken, getApiBaseUrl } from '../api/client';
 import { X, Settings as SettingsIcon, Shield, Key, Server, Loader2, CheckCircle, LogOut } from 'lucide-react';
 
@@ -31,13 +31,25 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [oauthError, setOauthError] = useState('');
   const [activeTab, setActiveTab] = useState<'bearer' | 'oauth'>('bearer');
 
+  const bearerInputRef = useRef<HTMLTextAreaElement>(null);
+  const clientIdInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     if (isOpen) {
       setBearerInput(currentToken);
       setBaseUrlInput(currentBaseUrl || getApiBaseUrl());
       setOauthError('');
+
+      const timer = setTimeout(() => {
+        if (activeTab === 'bearer') {
+          bearerInputRef.current?.focus();
+        } else {
+          clientIdInputRef.current?.focus();
+        }
+      }, 50);
+      return () => clearTimeout(timer);
     }
-  }, [isOpen, currentToken, currentBaseUrl]);
+  }, [isOpen, currentToken, currentBaseUrl, activeTab]);
 
   // Handle Escape key
   useEffect(() => {
@@ -51,6 +63,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   }, [isOpen, fetchingToken, onClose]);
 
   if (!isOpen) return null;
+
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget && !fetchingToken) {
+      onClose();
+    }
+  };
 
   const handleSaveBearerToken = (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,6 +122,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby="settings-modal-title"
+      onClick={handleBackdropClick}
     >
       <div className="bg-white border border-slate-200 rounded-xl shadow-xl max-w-lg w-full overflow-hidden my-8">
         {/* Header */}
@@ -222,6 +241,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   Bearer Token
                 </label>
                 <textarea
+                  ref={bearerInputRef}
                   id="settings-bearer-input"
                   rows={3}
                   value={bearerInput}
@@ -265,6 +285,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   Client ID
                 </label>
                 <input
+                  ref={clientIdInputRef}
                   type="text"
                   id="oauth-client-id"
                   value={clientId}

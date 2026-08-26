@@ -135,7 +135,7 @@ export async function createKeyPassEntry(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        group: data.group || '',
+        ...(data.group ? { group: data.group } : {}),
         title: data.title,
         username: data.username || '',
         password: data.password || '',

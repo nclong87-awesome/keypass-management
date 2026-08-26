@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { CreateKeyPassRequest } from '../types';
 import { generateSecurePassword } from '../utils/passwordGenerator';
 import { X, Key, Eye, EyeOff, Wand2, Loader2, PlusCircle } from 'lucide-react';
@@ -18,7 +18,6 @@ export const AddKeyPassModal: React.FC<AddKeyPassModalProps> = ({
   onSubmit,
   onNotify,
 }) => {
-  const [group, setGroup] = useState('');
   const [title, setTitle] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -27,10 +26,17 @@ export const AddKeyPassModal: React.FC<AddKeyPassModalProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [validationError, setValidationError] = useState('');
 
-  // Reset form whenever modal opens or closes
+  const titleInputRef = useRef<HTMLInputElement>(null);
+
+  // Auto focus Title input when modal opens & reset form on close
   useEffect(() => {
-    if (!isOpen) {
-      setGroup('');
+    if (isOpen) {
+      // Short delay ensures DOM mounting before focusing
+      const timer = setTimeout(() => {
+        titleInputRef.current?.focus();
+      }, 50);
+      return () => clearTimeout(timer);
+    } else {
       setTitle('');
       setUsername('');
       setPassword('');
@@ -54,6 +60,12 @@ export const AddKeyPassModal: React.FC<AddKeyPassModalProps> = ({
 
   if (!isOpen) return null;
 
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget && !loading) {
+      onClose();
+    }
+  };
+
   const handleGeneratePassword = () => {
     const generated = generateSecurePassword(18);
     setPassword(generated);
@@ -72,7 +84,6 @@ export const AddKeyPassModal: React.FC<AddKeyPassModalProps> = ({
 
     try {
       await onSubmit({
-        group: group.trim(),
         title: title.trim(),
         username: username.trim(),
         password: password,
@@ -93,6 +104,7 @@ export const AddKeyPassModal: React.FC<AddKeyPassModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby="add-modal-title"
+      onClick={handleBackdropClick}
     >
       <div className="bg-white border border-slate-200 rounded-xl shadow-xl max-w-lg w-full overflow-hidden my-8">
         {/* Header */}
@@ -132,6 +144,8 @@ export const AddKeyPassModal: React.FC<AddKeyPassModalProps> = ({
               Title <span className="text-rose-500">*</span>
             </label>
             <input
+              ref={titleInputRef}
+              autoFocus
               type="text"
               id="add-title-input"
               value={title}
@@ -145,40 +159,22 @@ export const AddKeyPassModal: React.FC<AddKeyPassModalProps> = ({
             />
           </div>
 
-          {/* Group & Username Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label
-                htmlFor="add-group-input"
-                className="block text-xs font-medium text-slate-700 mb-1"
-              >
-                Group
-              </label>
-              <input
-                type="text"
-                id="add-group-input"
-                value={group}
-                onChange={(e) => setGroup(e.target.value)}
-                placeholder="e.g. Root/Work, Personal"
-                className="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs"
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="add-username-input"
-                className="block text-xs font-medium text-slate-700 mb-1"
-              >
-                Username
-              </label>
-              <input
-                type="text"
-                id="add-username-input"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="e.g. developer@example.com"
-                className="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono shadow-xs"
-              />
-            </div>
+          {/* Username */}
+          <div>
+            <label
+              htmlFor="add-username-input"
+              className="block text-xs font-medium text-slate-700 mb-1"
+            >
+              Username
+            </label>
+            <input
+              type="text"
+              id="add-username-input"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="e.g. developer@example.com"
+              className="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono shadow-xs"
+            />
           </div>
 
           {/* Password with Generator & Eye Toggle */}

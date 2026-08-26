@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { KeyPass, UpdateKeyPassRequest } from '../types';
 import { generateSecurePassword } from '../utils/passwordGenerator';
 import { X, Edit2, Eye, EyeOff, Wand2, Loader2 } from 'lucide-react';
@@ -18,7 +18,6 @@ export const EditKeyPassModal: React.FC<EditKeyPassModalProps> = ({
   onSubmit,
   onNotify,
 }) => {
-  const [group, setGroup] = useState('');
   const [title, setTitle] = useState('');
   const [username, setUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -27,10 +26,11 @@ export const EditKeyPassModal: React.FC<EditKeyPassModalProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [validationError, setValidationError] = useState('');
 
-  // Pre-fill existing fields when item changes (password is NOT pre-filled!)
+  const titleInputRef = useRef<HTMLInputElement>(null);
+
+  // Pre-fill existing fields when item changes & auto focus Title
   useEffect(() => {
     if (item) {
-      setGroup(item.group || '');
       setTitle(item.title || '');
       setUsername(item.username || '');
       setNewPassword(''); // Never prefill password!
@@ -38,6 +38,15 @@ export const EditKeyPassModal: React.FC<EditKeyPassModalProps> = ({
       setNotes(item.notes || '');
       setShowPassword(false);
       setValidationError('');
+
+      // Focus and select the title input so user can edit immediately
+      const timer = setTimeout(() => {
+        if (titleInputRef.current) {
+          titleInputRef.current.focus();
+          titleInputRef.current.select();
+        }
+      }, 50);
+      return () => clearTimeout(timer);
     }
   }, [item]);
 
@@ -53,6 +62,12 @@ export const EditKeyPassModal: React.FC<EditKeyPassModalProps> = ({
   }, [item, loading, onClose]);
 
   if (!item) return null;
+
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget && !loading) {
+      onClose();
+    }
+  };
 
   const handleGeneratePassword = () => {
     const generated = generateSecurePassword(18);
@@ -71,7 +86,6 @@ export const EditKeyPassModal: React.FC<EditKeyPassModalProps> = ({
     setValidationError('');
 
     const payload: UpdateKeyPassRequest = {
-      group: group.trim(),
       title: title.trim(),
       username: username.trim(),
       url: url.trim(),
@@ -98,6 +112,7 @@ export const EditKeyPassModal: React.FC<EditKeyPassModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby="edit-modal-title"
+      onClick={handleBackdropClick}
     >
       <div className="bg-white border border-slate-200 rounded-xl shadow-xl max-w-lg w-full overflow-hidden my-8">
         {/* Header */}
@@ -137,6 +152,8 @@ export const EditKeyPassModal: React.FC<EditKeyPassModalProps> = ({
               Title <span className="text-rose-500">*</span>
             </label>
             <input
+              ref={titleInputRef}
+              autoFocus
               type="text"
               id="edit-title-input"
               value={title}
@@ -149,38 +166,21 @@ export const EditKeyPassModal: React.FC<EditKeyPassModalProps> = ({
             />
           </div>
 
-          {/* Group & Username Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label
-                htmlFor="edit-group-input"
-                className="block text-xs font-medium text-slate-700 mb-1"
-              >
-                Group
-              </label>
-              <input
-                type="text"
-                id="edit-group-input"
-                value={group}
-                onChange={(e) => setGroup(e.target.value)}
-                className="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs"
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="edit-username-input"
-                className="block text-xs font-medium text-slate-700 mb-1"
-              >
-                Username
-              </label>
-              <input
-                type="text"
-                id="edit-username-input"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono shadow-xs"
-              />
-            </div>
+          {/* Username */}
+          <div>
+            <label
+              htmlFor="edit-username-input"
+              className="block text-xs font-medium text-slate-700 mb-1"
+            >
+              Username
+            </label>
+            <input
+              type="text"
+              id="edit-username-input"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono shadow-xs"
+            />
           </div>
 
           {/* Password field with specified label: New password (optional) */}

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { KeyPass, CreateKeyPassRequest, UpdateKeyPassRequest, ToastMessage } from './types';
 import {
   searchKeyPassEntries,
@@ -71,7 +71,8 @@ export default function App() {
     }
   });
 
-  // Search State
+  // Search State & Refs
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState<string>('');
   const [top, setTop] = useState<number>(5);
   const [items, setItems] = useState<KeyPass[]>([]);
@@ -186,6 +187,22 @@ export default function App() {
       window.removeEventListener('focus', checkExpiry);
     };
   }, [token, handleClearToken, addToast]);
+
+  // Global Keyboard Shortcuts (Cmd+K / Ctrl+K to focus search bar)
+  useEffect(() => {
+    const handleGlobalShortcuts = (e: KeyboardEvent) => {
+      const isCmdOrCtrl = e.metaKey || e.ctrlKey;
+      if (isCmdOrCtrl && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        if (searchInputRef.current) {
+          searchInputRef.current.focus();
+          searchInputRef.current.select();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleGlobalShortcuts);
+    return () => window.removeEventListener('keydown', handleGlobalShortcuts);
+  }, []);
 
   // Password Reveal Toggle Handler
   const handleToggleReveal = (id: string) => {
@@ -393,6 +410,7 @@ export default function App() {
       <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 xl:px-10 py-6 space-y-6">
         {/* Search & Limit Control Bar */}
         <SearchBar
+          inputRef={searchInputRef}
           query={query}
           top={top}
           loading={loading}

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { KeyPass } from '../types';
 import { AlertTriangle, Trash2, X, Loader2, Folder, User } from 'lucide-react';
 
@@ -15,6 +15,18 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
   onClose,
   onConfirm,
 }) => {
+  const cancelBtnRef = useRef<HTMLButtonElement>(null);
+
+  // Auto focus Cancel button on open for keyboard accessibility & safety
+  useEffect(() => {
+    if (item) {
+      const timer = setTimeout(() => {
+        cancelBtnRef.current?.focus();
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [item]);
+
   // Handle Escape key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -27,6 +39,12 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
   }, [item, loading, onClose]);
 
   if (!item) return null;
+
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget && !loading) {
+      onClose();
+    }
+  };
 
   const handleConfirm = async () => {
     try {
@@ -42,6 +60,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby="delete-modal-title"
+      onClick={handleBackdropClick}
     >
       <div className="bg-white border border-slate-200 rounded-xl shadow-xl max-w-md w-full overflow-hidden">
         {/* Header */}
@@ -97,6 +116,8 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
           {/* Actions */}
           <div className="flex items-center justify-end gap-3 pt-2">
             <button
+              ref={cancelBtnRef}
+              autoFocus
               type="button"
               id="btn-cancel-delete"
               onClick={onClose}
