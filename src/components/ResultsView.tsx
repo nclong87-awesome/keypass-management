@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { KeyPass } from '../types';
+import { NotesModal } from './NotesModal';
 import {
   Eye,
   EyeOff,
@@ -34,6 +35,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
   onNotify,
 }) => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [selectedNotesItem, setSelectedNotesItem] = useState<KeyPass | null>(null);
 
   const handleCopyPassword = async (item: KeyPass) => {
     const isRevealed = revealedIds.has(item.id);
@@ -60,6 +62,15 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
     }
   };
 
+  const handleCopyUrl = async (url: string, title: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      onNotify(`URL for ${title} copied to clipboard!`, 'success');
+    } catch {
+      onNotify('Failed to copy URL to clipboard.', 'error');
+    }
+  };
+
   const formatDate = (dateString: string | null) => {
     if (!dateString) return '—';
     try {
@@ -80,16 +91,16 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
     <div className="space-y-4" id="results-view-container">
       {/* Desktop Table View */}
       <div className="hidden lg:block overflow-x-auto bg-white border border-slate-200 rounded-xl shadow-xs">
-        <table className="w-full text-left border-collapse" id="results-desktop-table">
+        <table className="w-full text-left border-collapse table-fixed" id="results-desktop-table">
           <thead>
             <tr className="border-b border-slate-200 bg-slate-50/80 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              <th className="py-3.5 px-4">Title</th>
-              <th className="py-3.5 px-4">Username</th>
-              <th className="py-3.5 px-4">Password</th>
-              <th className="py-3.5 px-4">URL</th>
-              <th className="py-3.5 px-4">Notes</th>
-              <th className="py-3.5 px-4">Modified</th>
-              <th className="py-3.5 px-4 text-right">Actions</th>
+              <th className="py-3.5 px-4 w-[18%]">Title</th>
+              <th className="py-3.5 px-4 w-[15%]">Username</th>
+              <th className="py-3.5 px-4 w-[22%]">Password</th>
+              <th className="py-3.5 px-4 w-[20%]">URL</th>
+              <th className="py-3.5 px-4 w-[13%]">Notes</th>
+              <th className="py-3.5 px-4 w-[12%]">Modified</th>
+              <th className="py-3.5 px-4 w-[10%] text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 text-sm">
@@ -104,20 +115,20 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                   className="hover:bg-slate-50/80 transition-colors group"
                 >
                   {/* Title & ID */}
-                  <td className="py-3.5 px-4 align-top">
-                    <div className="font-semibold text-slate-900 flex items-center gap-1.5">
-                      <span>{item.title}</span>
+                  <td className="py-3.5 px-4 align-middle overflow-hidden">
+                    <div className="font-semibold text-slate-900 truncate" title={item.title}>
+                      {item.title}
                     </div>
-                    <div className="text-[11px] text-slate-400 font-mono mt-1 flex items-center gap-1" title={`ID: ${item.id}`}>
+                    <div className="text-[11px] text-slate-400 font-mono mt-0.5 flex items-center gap-1" title={`ID: ${item.id}`}>
                       <Hash className="w-2.5 h-2.5 shrink-0" />
-                      <span className="truncate max-w-[120px]">{item.id}</span>
+                      <span className="truncate">{item.id}</span>
                     </div>
                   </td>
 
                   {/* Username */}
-                  <td className="py-3.5 px-4 align-top">
+                  <td className="py-3.5 px-4 align-middle overflow-hidden">
                     {item.username ? (
-                      <span className="text-slate-700 font-mono text-xs bg-slate-100 px-2 py-1 rounded border border-slate-200">
+                      <span className="text-slate-700 font-mono text-xs bg-slate-100 px-2 py-1 rounded border border-slate-200 inline-block max-w-full truncate" title={item.username}>
                         {item.username}
                       </span>
                     ) : (
@@ -126,7 +137,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                   </td>
 
                   {/* Password field with reveal and copy */}
-                  <td className="py-3.5 px-4 align-top">
+                  <td className="py-3.5 px-4 align-middle overflow-hidden">
                     {isUnavailable ? (
                       <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 border border-amber-200 rounded text-amber-800 text-xs font-medium">
                         <ShieldAlert className="w-3.5 h-3.5 shrink-0 text-amber-600" />
@@ -134,13 +145,13 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                       </div>
                     ) : (
                       <div className="flex items-center gap-1.5">
-                        <div className="relative">
+                        <div className="relative flex-1 min-w-0">
                           <input
                             type={isRevealed ? 'text' : 'password'}
                             value={isRevealed ? item.password : '••••••••••••'}
                             readOnly
                             tabIndex={-1}
-                            className="w-32 bg-slate-50 border border-slate-200 rounded px-2.5 py-1 text-xs font-mono text-slate-800 select-all focus:outline-none"
+                            className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-xs font-mono text-slate-800 select-all focus:outline-none truncate"
                             aria-label={`Password field for ${item.title}`}
                           />
                         </div>
@@ -150,7 +161,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                           type="button"
                           id={`btn-toggle-password-${item.id}`}
                           onClick={() => onToggleReveal(item.id)}
-                          className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors border border-slate-200"
+                          className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors border border-slate-200 shrink-0"
                           aria-label={
                             isRevealed
                               ? `Hide password for ${item.title}`
@@ -175,7 +186,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                           id={`btn-copy-password-${item.id}`}
                           onClick={() => handleCopyPassword(item)}
                           disabled={!isRevealed}
-                          className={`p-1.5 rounded-lg transition-colors border ${
+                          className={`p-1.5 rounded-lg transition-colors border shrink-0 ${
                             isRevealed
                               ? 'bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border-slate-200'
                               : 'bg-slate-50 text-slate-300 cursor-not-allowed border-slate-100'
@@ -198,46 +209,66 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                   </td>
 
                   {/* URL */}
-                  <td className="py-3.5 px-4 align-top max-w-xs xl:max-w-md">
+                  <td className="py-3.5 px-4 align-middle overflow-hidden">
                     {item.url ? (
-                      <a
-                        href={item.url.startsWith('http') ? item.url : `https://${item.url}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-indigo-600 hover:text-indigo-700 text-xs flex items-center gap-1 truncate hover:underline font-medium"
-                        title={item.url}
-                      >
-                        <span className="truncate">{item.url}</span>
-                        <ExternalLink className="w-3 h-3 shrink-0" />
-                      </a>
+                      <div className="flex items-center gap-1 min-w-0 max-w-full">
+                        <a
+                          href={item.url.startsWith('http') ? item.url : `https://${item.url}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-indigo-600 hover:text-indigo-700 text-xs flex items-center gap-1 truncate hover:underline font-medium min-w-0 flex-1"
+                          title={item.url}
+                        >
+                          <span className="truncate">{item.url}</span>
+                          <ExternalLink className="w-3 h-3 shrink-0" />
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyUrl(item.url, item.title)}
+                          className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded shrink-0 transition-colors"
+                          title="Copy URL"
+                          aria-label={`Copy URL for ${item.title}`}
+                        >
+                          <Copy className="w-3 h-3" />
+                        </button>
+                      </div>
                     ) : (
                       <span className="text-slate-400 italic text-xs">—</span>
                     )}
                   </td>
 
                   {/* Notes */}
-                  <td className="py-3.5 px-4 align-top max-w-xs xl:max-w-lg">
+                  <td className="py-3.5 px-4 align-middle overflow-hidden">
                     {item.notes ? (
-                      <p className="text-xs text-slate-600 line-clamp-2" title={item.notes}>
-                        {item.notes}
-                      </p>
+                      <button
+                        type="button"
+                        id={`btn-view-notes-${item.id}`}
+                        onClick={() => setSelectedNotesItem(item)}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-colors max-w-full text-xs font-medium group/btn cursor-pointer"
+                        title="Click to view full notes details"
+                      >
+                        <FileText className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                        <span className="truncate max-w-[80px] xl:max-w-[120px] text-slate-600">
+                          {item.notes.replace(/\s+/g, ' ')}
+                        </span>
+                        <span className="text-[11px] text-indigo-600 font-semibold group-hover/btn:underline shrink-0 ml-0.5">
+                          View
+                        </span>
+                      </button>
                     ) : (
                       <span className="text-slate-400 italic text-xs">—</span>
                     )}
                   </td>
 
                   {/* Dates */}
-                  <td className="py-3.5 px-4 align-top text-xs text-slate-500 whitespace-nowrap">
-                    <div>Created: {formatDate(item.createdAt)}</div>
-                    {item.updatedAt && (
-                      <div className="text-[11px] text-slate-400">
-                        Updated: {formatDate(item.updatedAt)}
-                      </div>
-                    )}
+                  <td className="py-3.5 px-4 align-middle text-xs text-slate-500 overflow-hidden">
+                    <div className="truncate" title={`Created: ${formatDate(item.createdAt)}`}>
+                      {formatDate(item.createdAt)}
+                    </div>
                   </td>
 
                   {/* Actions */}
-                  <td className="py-3.5 px-4 align-top text-right whitespace-nowrap">
+                  <td className="py-3.5 px-4 align-middle text-right shrink-0">
                     <div className="flex items-center justify-end gap-1.5">
                       <button
                         type="button"
@@ -315,7 +346,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                 <div className="flex items-center gap-2">
                   <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                   <span className="text-slate-500 font-medium">User:</span>
-                  <span className="text-slate-800 font-mono">
+                  <span className="text-slate-800 font-mono truncate">
                     {item.username || '—'}
                   </span>
                 </div>
@@ -364,7 +395,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                       value={isRevealed ? item.password : '••••••••••••'}
                       readOnly
                       tabIndex={-1}
-                      className="flex-1 bg-white border border-slate-200 rounded px-3 py-1.5 text-xs font-mono text-slate-900 select-all"
+                      className="flex-1 bg-white border border-slate-200 rounded px-3 py-1.5 text-xs font-mono text-slate-900 select-all min-w-0"
                     />
                     <button
                       type="button"
@@ -407,9 +438,21 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
 
               {/* Notes */}
               {item.notes && (
-                <div className="text-xs text-slate-600 bg-slate-50 p-2.5 rounded border border-slate-200 flex items-start gap-1.5">
-                  <FileText className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
-                  <p className="whitespace-pre-wrap">{item.notes}</p>
+                <div className="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 truncate flex-1 min-w-0">
+                    <FileText className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <span className="truncate text-slate-600">
+                      {item.notes.replace(/\s+/g, ' ')}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    id={`btn-mobile-view-notes-${item.id}`}
+                    onClick={() => setSelectedNotesItem(item)}
+                    className="px-2.5 py-1 bg-white hover:bg-slate-100 text-indigo-600 font-semibold border border-slate-200 rounded-md text-xs shrink-0 flex items-center gap-1 shadow-2xs transition-colors"
+                  >
+                    <span>View Notes</span>
+                  </button>
                 </div>
               )}
 
@@ -425,6 +468,14 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
           );
         })}
       </div>
+
+      {/* Notes Detail Modal */}
+      <NotesModal
+        item={selectedNotesItem}
+        onClose={() => setSelectedNotesItem(null)}
+        onNotify={onNotify}
+      />
     </div>
   );
 };
+
