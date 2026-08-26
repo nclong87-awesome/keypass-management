@@ -7,7 +7,7 @@ interface SettingsModalProps {
   currentToken: string;
   currentBaseUrl: string;
   onClose: () => void;
-  onSaveToken: (token: string) => void;
+  onSaveToken: (token: string, expiresInSeconds?: number) => void;
   onSaveBaseUrl: (url: string) => void;
   onClearToken: () => void;
   onNotify: (message: string, type: 'success' | 'error' | 'info') => void;
@@ -60,7 +60,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     }
     onSaveToken(bearerInput.trim());
     onSaveBaseUrl(baseUrlInput.trim());
-    onNotify('Authorization token updated in memory!', 'success');
+    onNotify('Authorization token saved to local storage!', 'success');
     onClose();
   };
 
@@ -82,10 +82,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         targetBaseUrl
       );
       if (res.access_token) {
-        onSaveToken(res.access_token);
+        onSaveToken(res.access_token, res.expires_in);
         onSaveBaseUrl(targetBaseUrl);
         setClientSecret(''); // Clear secret from form memory immediately
-        onNotify('Successfully obtained OAuth Bearer token!', 'success');
+        onNotify('Successfully obtained OAuth Bearer token & saved to local storage!', 'success');
         onClose();
       } else {
         setOauthError('No access token received from server.');
@@ -159,7 +159,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   {currentToken ? 'Authorization Token Active' : 'No Token Configured'}
                 </p>
                 <p className="text-[11px] text-slate-500">
-                  {currentToken ? 'Token held in volatile memory' : 'API requests will return 401 Unauthorized'}
+                  {currentToken
+                    ? 'Saved in local storage (persists across refreshes)'
+                    : 'API requests will return 401 Unauthorized'}
                 </p>
               </div>
             </div>

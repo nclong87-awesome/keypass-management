@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { KeyPass, CreateKeyPassRequest, UpdateKeyPassRequest, ToastMessage } from './types';
 import {
   searchKeyPassEntries,
@@ -26,10 +26,50 @@ import {
   Info,
 } from 'lucide-react';
 
+const STORAGE_KEY_TOKEN = 'keypass_access_token';
+const STORAGE_KEY_EXPIRES = 'keypass_token_expires_at';
+const STORAGE_KEY_BASE_URL = 'keypass_base_url';
+
 export default function App() {
-  // In-memory Authentication and Config State
-  const [token, setToken] = useState<string>('');
-  const [baseUrl, setBaseUrl] = useState<string>(getApiBaseUrl());
+  // Persisted Authentication and Config State from local storage
+  const [token, setTokenState] = useState<string>(() => {
+    try {
+      const savedToken = localStorage.getItem(STORAGE_KEY_TOKEN);
+      const expiresAt = localStorage.getItem(STORAGE_KEY_EXPIRES);
+      if (savedToken && expiresAt) {
+        if (Date.now() >= Number(expiresAt)) {
+          localStorage.removeItem(STORAGE_KEY_TOKEN);
+          localStorage.removeItem(STORAGE_KEY_EXPIRES);
+          return '';
+        }
+      }
+      return savedToken || '';
+    } catch {
+      return '';
+    }
+  });
+
+  const [isTokenExpired, setIsTokenExpired] = useState<boolean>(() => {
+    try {
+      const savedToken = localStorage.getItem(STORAGE_KEY_TOKEN);
+      const expiresAt = localStorage.getItem(STORAGE_KEY_EXPIRES);
+      if (savedToken && expiresAt && Date.now() >= Number(expiresAt)) {
+        return true;
+      }
+    } catch {
+      // Ignore storage errors
+    }
+    return false;
+  });
+
+  const [baseUrl, setBaseUrlState] = useState<string>(() => {
+    try {
+      const savedUrl = localStorage.getItem(STORAGE_KEY_BASE_URL);
+      return savedUrl || getApiBaseUrl();
+    } catch {
+      return getApiBaseUrl();
+    }
+  });
 
   // Search State
   const [query, setQuery] = useState<string>('');
@@ -71,6 +111,82 @@ export default function App() {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
+  // Local Storage Save and Clear Helpers
+  const saveToken = useCallback((newToken: string, expiresInSeconds?: number) => {
+    setTokenState(newToken);
+    setIsTokenExpired(false);
+    try {
+      if (newToken) {
+        localStorage.setItem(STORAGE_KEY_TOKEN, newToken);
+        if (expiresInSeconds && expiresInSeconds > 0) {
+          const expiresAt = Date.now() + expiresInSeconds * 1000;
+          localStorage.setItem(STORAGE_KEY_EXPIRES, String(expiresAt));
+        } else {
+          localStorage.removeItem(STORAGE_KEY_EXPIRES);
+        }
+      } else {
+        localStorage.removeItem(STORAGE_KEY_TOKEN);
+        localStorage.removeItem(STORAGE_KEY_EXPIRES);
+      }
+    } catch {
+      // Ignore
+    }
+  }, []);
+
+  const saveBaseUrl = useCallback((newUrl: string) => {
+    setBaseUrlState(newUrl);
+    try {
+      if (newUrl) {
+        localStorage.setItem(STORAGE_KEY_BASE_URL, newUrl);
+      } else {
+        localStorage.removeItem(STORAGE_KEY_BASE_URL);
+      }
+    } catch {
+      // Ignore
+    }
+  }, []);
+
+  const handleClearToken = useCallback(() => {
+    setTokenState('');
+    setIsTokenExpired(false);
+    try {
+      localStorage.removeItem(STORAGE_KEY_TOKEN);
+      localStorage.removeItem(STORAGE_KEY_EXPIRES);
+    } catch {
+      // Ignore
+    }
+    setRevealedIds(new Set());
+    setItems([]);
+    setHasSearched(false);
+    setSearchError(null);
+  }, []);
+
+  // Check token expiry periodically and on window focus
+  useEffect(() => {
+    if (!token) return;
+
+    const checkExpiry = () => {
+      try {
+        const expiresAt = localStorage.getItem(STORAGE_KEY_EXPIRES);
+        if (expiresAt && Date.now() >= Number(expiresAt)) {
+          handleClearToken();
+          setIsTokenExpired(true);
+          addToast('Authorization token has expired. Please re-connect.', 'error');
+        }
+      } catch {
+        // Ignore
+      }
+    };
+
+    const interval = setInterval(checkExpiry, 5000);
+    window.addEventListener('focus', checkExpiry);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', checkExpiry);
+    };
+  }, [token, handleClearToken, addToast]);
+
   // Password Reveal Toggle Handler
   const handleToggleReveal = (id: string) => {
     setRevealedIds((prev) => {
@@ -110,10 +226,14 @@ export default function App() {
       setHasSearched(true);
     } catch (err: unknown) {
       if (err instanceof ApiError) {
-        setSearchError(err.message);
-        addToast(err.message, 'error');
         if (err.status === 401 || err.status === 403) {
-          setIsSettingsOpen(true);
+          handleClearToken();
+          setIsTokenExpired(true);
+          setSearchError('Authorization token is invalid or has expired. Please re-connect.');
+          addToast('Authorization token is invalid or expired. Please re-connect.', 'error');
+        } else {
+          setSearchError(err.message);
+          addToast(err.message, 'error');
         }
       } else if (err instanceof Error) {
         setSearchError(err.message);
@@ -158,8 +278,15 @@ export default function App() {
         setHasSearched(true);
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to create entry.';
-      addToast(msg, 'error');
+      if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
+        handleClearToken();
+        setIsTokenExpired(true);
+        addToast('Authorization token is invalid or expired. Please re-connect.', 'error');
+        setIsSettingsOpen(true);
+      } else {
+        const msg = err instanceof Error ? err.message : 'Failed to create entry.';
+        addToast(msg, 'error');
+      }
       throw err;
     } finally {
       setAddLoading(false);
@@ -190,8 +317,15 @@ export default function App() {
         return next;
       });
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to update entry.';
-      addToast(msg, 'error');
+      if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
+        handleClearToken();
+        setIsTokenExpired(true);
+        addToast('Authorization token is invalid or expired. Please re-connect.', 'error');
+        setIsSettingsOpen(true);
+      } else {
+        const msg = err instanceof Error ? err.message : 'Failed to update entry.';
+        addToast(msg, 'error');
+      }
       throw err;
     } finally {
       setEditLoading(false);
@@ -225,20 +359,18 @@ export default function App() {
 
       setDeletingItem(null);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to delete entry.';
-      addToast(msg, 'error');
+      if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
+        handleClearToken();
+        setIsTokenExpired(true);
+        addToast('Authorization token is invalid or expired. Please re-connect.', 'error');
+        setIsSettingsOpen(true);
+      } else {
+        const msg = err instanceof Error ? err.message : 'Failed to delete entry.';
+        addToast(msg, 'error');
+      }
     } finally {
       setDeleteLoading(false);
     }
-  };
-
-  // Clear Token / Logout
-  const handleClearToken = () => {
-    setToken('');
-    setRevealedIds(new Set());
-    setItems([]);
-    setHasSearched(false);
-    setSearchError(null);
   };
 
   return (
@@ -281,15 +413,29 @@ export default function App() {
             id="auth-prompt-card"
             className="bg-white border border-slate-200 rounded-xl p-6 sm:p-8 text-center max-w-xl mx-auto space-y-4 shadow-sm"
           >
-            <div className="w-12 h-12 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 mx-auto">
-              <KeyRound className="w-6 h-6" />
+            <div
+              className={`w-12 h-12 rounded-full border flex items-center justify-center mx-auto ${
+                isTokenExpired
+                  ? 'bg-amber-50 border-amber-200 text-amber-600'
+                  : 'bg-indigo-50 border-indigo-100 text-indigo-600'
+              }`}
+            >
+              {isTokenExpired ? (
+                <ShieldAlert className="w-6 h-6" />
+              ) : (
+                <KeyRound className="w-6 h-6" />
+              )}
             </div>
             <div>
               <h2 className="text-lg font-bold text-slate-900">
-                Authorization Token Required
+                {isTokenExpired
+                  ? 'Authorization Token Expired or Invalid'
+                  : 'Authorization Token Required'}
               </h2>
               <p className="text-sm text-slate-600 mt-1 max-w-md mx-auto leading-relaxed">
-                All KeyPass endpoints require a valid Bearer token. Paste an existing token or obtain one via Client Credentials in Settings.
+                {isTokenExpired
+                  ? 'Your stored session access token has expired or is no longer valid. Please re-connect to request a new token.'
+                  : 'All KeyPass endpoints require a valid Bearer token. Paste an existing token or obtain one via Client Credentials in Settings.'}
               </p>
             </div>
             <div className="pt-2 flex justify-center">
@@ -403,8 +549,8 @@ export default function App() {
         currentToken={token}
         currentBaseUrl={baseUrl}
         onClose={() => setIsSettingsOpen(false)}
-        onSaveToken={(t) => setToken(t)}
-        onSaveBaseUrl={(url) => setBaseUrl(url)}
+        onSaveToken={(t, exp) => saveToken(t, exp)}
+        onSaveBaseUrl={(url) => saveBaseUrl(url)}
         onClearToken={handleClearToken}
         onNotify={addToast}
       />
