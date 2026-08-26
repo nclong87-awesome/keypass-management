@@ -390,7 +390,7 @@ export default function App() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 xl:px-10 py-6 space-y-6">
         {/* Search & Limit Control Bar */}
         <SearchBar
           query={query}
@@ -537,7 +537,7 @@ export default function App() {
 
       {/* Footer */}
       <footer className="border-t border-slate-200 py-4 mt-8 bg-white text-center text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2 font-mono">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-10 flex flex-col sm:flex-row items-center justify-between gap-2 font-mono">
           <span>KeyPass Manager • Real Backend API Integration</span>
           <span>Target: {baseUrl}</span>
         </div>

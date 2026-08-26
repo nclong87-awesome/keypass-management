@@ -205,7 +205,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                   </td>
 
                   {/* URL */}
-                  <td className="py-3.5 px-4 align-top max-w-[160px]">
+                  <td className="py-3.5 px-4 align-top max-w-xs xl:max-w-md">
                     {item.url ? (
                       <a
                         href={item.url.startsWith('http') ? item.url : `https://${item.url}`}
@@ -223,7 +223,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                   </td>
 
                   {/* Notes */}
-                  <td className="py-3.5 px-4 align-top max-w-[180px]">
+                  <td className="py-3.5 px-4 align-top max-w-xs xl:max-w-lg">
                     {item.notes ? (
                       <p className="text-xs text-slate-600 line-clamp-2" title={item.notes}>
                         {item.notes}
