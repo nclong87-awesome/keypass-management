@@ -29,6 +29,10 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     onSearch();
   };
 
+  useEffect(() => {
+    inputRef?.current?.focus();
+  }, [inputRef]);
+
   return (
     <div
       id="search-container"
@@ -47,6 +51,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
             ref={inputRef}
             type="text"
             id="search-query-input"
+            autoFocus
             value={query}
             onChange={(e) => onQueryChange(e.target.value)}
             placeholder="Search credentials (e.g., github, aws, work)..."

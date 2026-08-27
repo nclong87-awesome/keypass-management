@@ -188,6 +188,11 @@ export default function App() {
     };
   }, [token, handleClearToken, addToast]);
 
+  // Auto-focus search input on initial app mount
+  useEffect(() => {
+    searchInputRef.current?.focus();
+  }, []);
+
   // Global Keyboard Shortcuts (Cmd+K / Ctrl+K to focus search bar)
   useEffect(() => {
     const handleGlobalShortcuts = (e: KeyboardEvent) => {
