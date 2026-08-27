@@ -35,18 +35,12 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
   onNotify,
 }) => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [copiedUsernameId, setCopiedUsernameId] = useState<string | null>(null);
   const [selectedNotesItem, setSelectedNotesItem] = useState<KeyPass | null>(null);
 
   const handleCopyPassword = async (item: KeyPass) => {
-    const isRevealed = revealedIds.has(item.id);
-
     if (item.password === '[unavailable]') {
       onNotify('Password is unavailable for this entry.', 'error');
-      return;
-    }
-
-    if (!isRevealed) {
-      onNotify(`Please reveal the password for ${item.title} before copying.`, 'info');
       return;
     }
 
@@ -59,6 +53,21 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
       }, 2000);
     } catch {
       onNotify('Failed to copy password to clipboard.', 'error');
+    }
+  };
+
+  const handleCopyUsername = async (item: KeyPass) => {
+    if (!item.username) return;
+
+    try {
+      await navigator.clipboard.writeText(item.username);
+      setCopiedUsernameId(item.id);
+      onNotify(`Username for ${item.title} copied to clipboard!`, 'success');
+      setTimeout(() => {
+        setCopiedUsernameId(null);
+      }, 2000);
+    } catch {
+      onNotify('Failed to copy username to clipboard.', 'error');
     }
   };
 
@@ -134,9 +143,25 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                   {/* Username */}
                   <td className="py-3.5 px-4 align-middle overflow-hidden">
                     {item.username ? (
-                      <span className="text-slate-700 font-mono text-xs bg-slate-100 px-2 py-1 rounded border border-slate-200 inline-block max-w-full truncate" title={item.username}>
-                        {item.username}
-                      </span>
+                      <div className="flex items-center gap-1.5 min-w-0 max-w-full">
+                        <span className="text-slate-700 font-mono text-xs bg-slate-100 px-2 py-1 rounded border border-slate-200 inline-block max-w-full truncate flex-1 min-w-0" title={item.username}>
+                          {item.username}
+                        </span>
+                        <button
+                          type="button"
+                          id={`btn-copy-username-${item.id}`}
+                          onClick={() => handleCopyUsername(item)}
+                          className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border border-slate-200 shrink-0 transition-colors"
+                          aria-label={`Copy username for ${item.title}`}
+                          title={`Copy username for ${item.title}`}
+                        >
+                          {copiedUsernameId === item.id ? (
+                            <Check className="w-3.5 h-3.5 text-emerald-600" />
+                          ) : (
+                            <Copy className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                      </div>
                     ) : (
                       <span className="text-slate-400 italic text-xs">—</span>
                     )}
@@ -195,18 +220,14 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                           type="button"
                           id={`btn-copy-password-${item.id}`}
                           onClick={() => handleCopyPassword(item)}
-                          disabled={!isRevealed}
+                          disabled={isUnavailable}
                           className={`p-1.5 rounded-lg transition-colors border shrink-0 ${
-                            isRevealed
-                              ? 'bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border-slate-200'
-                              : 'bg-slate-50 text-slate-300 cursor-not-allowed border-slate-100'
+                            isUnavailable
+                              ? 'bg-slate-50 text-slate-300 cursor-not-allowed border-slate-100'
+                              : 'bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border-slate-200'
                           }`}
                           aria-label={`Copy password for ${item.title}`}
-                          title={
-                            isRevealed
-                              ? `Copy password for ${item.title}`
-                              : `Reveal password first to copy`
-                          }
+                          title={`Copy password for ${item.title}`}
                         >
                           {copiedId === item.id ? (
                             <Check className="w-3.5 h-3.5 text-emerald-600" />
@@ -353,12 +374,30 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
               {/* Grid of details */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                 {/* Username */}
-                <div className="flex items-center gap-2">
-                  <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  <span className="text-slate-500 font-medium">User:</span>
-                  <span className="text-slate-800 font-mono truncate">
-                    {item.username || '—'}
-                  </span>
+                <div className="flex items-center justify-between gap-2 min-w-0">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <span className="text-slate-500 font-medium shrink-0">User:</span>
+                    <span className="text-slate-800 font-mono truncate">
+                      {item.username || '—'}
+                    </span>
+                  </div>
+                  {item.username && (
+                    <button
+                      type="button"
+                      id={`btn-mobile-copy-username-${item.id}`}
+                      onClick={() => handleCopyUsername(item)}
+                      className="p-1 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded border border-slate-200 shrink-0 transition-colors"
+                      aria-label={`Copy username for ${item.title}`}
+                      title={`Copy username for ${item.title}`}
+                    >
+                      {copiedUsernameId === item.id ? (
+                        <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      ) : (
+                        <Copy className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+                  )}
                 </div>
 
                 {/* URL */}
@@ -432,13 +471,14 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                       type="button"
                       id={`btn-mobile-copy-pwd-${item.id}`}
                       onClick={() => handleCopyPassword(item)}
-                      disabled={!isRevealed}
-                      className={`p-2 rounded-lg border ${
-                        isRevealed
-                          ? 'bg-slate-100 text-slate-700 border-slate-200'
-                          : 'bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed'
+                      disabled={isUnavailable}
+                      className={`p-2 rounded-lg border transition-colors ${
+                        isUnavailable
+                          ? 'bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed'
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
                       }`}
                       aria-label={`Copy password for ${item.title}`}
+                      title={`Copy password for ${item.title}`}
                     >
                       {copiedId === item.id ? (
                         <Check className="w-4 h-4 text-emerald-600" />

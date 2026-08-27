@@ -99,9 +99,29 @@ export const NotesModal: React.FC<NotesModalProps> = ({ item, onClose, onNotify 
               </span>
             </div>
             {item.username && (
-              <div className="text-slate-600">
-                <span className="font-semibold text-slate-500">Username: </span>
-                <span className="font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200">{item.username}</span>
+              <div className="text-slate-600 flex items-center justify-between gap-2">
+                <div className="truncate">
+                  <span className="font-semibold text-slate-500">Username: </span>
+                  <span className="font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200">{item.username}</span>
+                </div>
+                <button
+                  type="button"
+                  id="btn-copy-notes-modal-username"
+                  onClick={async () => {
+                    if (!item.username) return;
+                    try {
+                      await navigator.clipboard.writeText(item.username);
+                      if (onNotify) onNotify(`Username for ${item.title} copied to clipboard!`, 'success');
+                    } catch {
+                      if (onNotify) onNotify('Failed to copy username to clipboard.', 'error');
+                    }
+                  }}
+                  className="p-1 text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 rounded transition-colors shrink-0"
+                  title={`Copy username for ${item.title}`}
+                  aria-label={`Copy username for ${item.title}`}
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                </button>
               </div>
             )}
             {item.url && (
