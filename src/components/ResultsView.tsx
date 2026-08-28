@@ -291,10 +291,17 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                     )}
                   </td>
 
-                  {/* Dates */}
+                  {/* Dates - Modified (prefers updatedAt if present) */}
                   <td className="py-3.5 px-4 align-middle text-xs text-slate-500 overflow-hidden">
-                    <div className="truncate" title={`Created: ${formatDate(item.createdAt)}`}>
-                      {formatDate(item.createdAt)}
+                    <div
+                      className="truncate"
+                      title={
+                        item.updatedAt
+                          ? `Modified: ${formatDate(item.updatedAt)} (Created: ${formatDate(item.createdAt)})`
+                          : `Created: ${formatDate(item.createdAt)}`
+                      }
+                    >
+                      {formatDate(item.updatedAt || item.createdAt)}
                     </div>
                   </td>
 
@@ -512,9 +519,16 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
 
               {/* Footer dates & ID */}
               <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1 font-mono">
-                <span className="flex items-center gap-1">
+                <span
+                  className="flex items-center gap-1"
+                  title={
+                    item.updatedAt
+                      ? `Modified: ${formatDate(item.updatedAt)} (Created: ${formatDate(item.createdAt)})`
+                      : `Created: ${formatDate(item.createdAt)}`
+                  }
+                >
                   <Calendar className="w-3 h-3" />
-                  {formatDate(item.createdAt)}
+                  {formatDate(item.updatedAt || item.createdAt)}
                 </span>
                 <span>ID: {item.id.slice(0, 8)}...</span>
               </div>
